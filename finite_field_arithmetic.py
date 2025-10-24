@@ -19,7 +19,7 @@ def finite_field_inversion(f: pa.Polynomial, h: pa.Polynomial):
     f = poly_mod_reduction(f, h)
 
     # If h is not irreducible, inverting is not possible
-    if is_primitive(h) == False:
+    if is_primitive(f,h,p) == False:
         raise ValueError("h is not irreducible")
     
     # Zero has no inverse
@@ -109,7 +109,7 @@ def finite_field_division(f: pa.Polynomial, g: pa.Polynomial, h: pa.Polynomial):
 
     g_inv = finite_field_inversion(g, h)
 
-    prod = finite_field_multiply(f, g_inv)
+    prod = finite_field_multiply(f, g_inv,h)
     prod = poly_mod_reduction(prod, h)
 
     return prod
