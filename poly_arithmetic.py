@@ -40,7 +40,7 @@ class Polynomial:
         else:
             self.coefficients = temp_coeffs
             
-    def degree(self):
+    def __degree__(self):
         """
             Returns the degree of the polynomial. 
             As provided in the assignment description, degree(-1) indicates
@@ -50,7 +50,7 @@ class Polynomial:
             return -1
         return len(self.coefficients) - 1
     
-    def get_coefficient(self, index):
+    def __get_coefficient__(self, index):
         """
             Gets the coefficient of a polynomial variable, based on its index
             (its degree.) Required for any sort of basic operation to properly
@@ -110,3 +110,138 @@ class Polynomial:
             new_coeffs.append(new_coeff)
             
         return Polynomial(new_coeffs, self.modulus)
+    
+    def __multiply__(self, other):
+        """
+            Performs polynomial multiplication: (self * other) mod p.
+            
+        """
+        deg_self = self.degree()
+        deg_other = other.degree()
+        
+        if deg_self == -1 or deg_other == -1:
+            return Polynomial([0], self.modulus)
+
+        new_deg = deg_self + deg_other
+        new_coeffs = [0] * (new_deg + 1)
+        
+        # Whereas the logic above simply fetches the necessary data and increments
+        # the appropriate lists to reflect the new polynomial, this handles the
+        # incrementation of the coefficients.
+        
+        for i in range(len(self.coefficients)):
+            for j in range(len(other.coefficients)):
+                new_coeffs[i + j] = (new_coeffs[i + j] 
+                                     + self.coefficients[i] 
+                                     * other.coefficients[j]) % self.modulus
+                
+        return Polynomial(new_coeffs, self.modulus)
+    
+# The rest of the logic is handled as a regular function, though named in a manner
+# less obnoxious than in the standard arithmetics implementation, and uses all of the
+# (basic) functions given above.
+# [NOTE]: This also removes the issue of having to call every single function on the 
+# polynomial function we are working with itself, which was... a choice.
+
+def polynomial_LD(f, g):
+    """
+    
+    Performs long division f/g, using the script-provided algorithm
+    as a template (same variable names as well.)
+
+    Args:
+        f (Polynomial): The first polynomial.
+        g (Polynomial): The second polynomial.
+    """
+    
+    p = f.mod
+    q = Polynomial([0], p)
+    r = Polynomial(f.coefficients, p)
+    
+    # Calculate modular inverse of the leading coefficient of g
+    g_lead_coeff = g.coefficients[-1]
+    # Use pow(base, exponent, modulus) for modular inverse
+    # exponent = -1 in Z_p is p-2 by Fermat's Little Theorem
+    g_lead_coeff_inv = pow(g_lead_coeff, p - 2, p)
+    
+    while r.degree() >= g.degree() and r.degree() != -1:
+        deg_r = r.degree()
+        r_lead_coeff = r.coefficients[-1]
+        
+        # Calculate the coefficient and degree of the term to subtract
+        term_coeff = (r_lead_coeff * g_lead_coeff_inv) % p
+        term_degree = deg_r - g.degree()
+        
+        # Create the term as a polynomial: (term_coeff) * X^(term_degree)
+        term_coeffs = [0] * (term_degree + 1)
+        term_coeffs[term_degree] = term_coeff
+        term = Polynomial(term_coeffs, p)
+        
+        # q = q + term
+        # r = r - (term * g)
+        q = q + term
+        r = r - (term * g)
+        
+    return q, r
+
+def poly_extended_euclidean_algorithm(f, g):
+    """
+    Performs the Extended Euclidean Algorithm for polynomials f and g.
+    Returns (a, b, d) such that a*f + b*g = d = gcd(f, g).
+    
+    Adapts the outcome to be monic via comparison/multiplication by inverse.
+    
+    Args:
+        f (Polynomial): The first polynomial.
+        g (Polynomial): The second polynomial.
+    """
+    p = f.modulus
+    
+    if g.degree() == -1:
+        if f.degree() == -1: # Both are zero
+            return Polynomial([0], p), Polynomial([0], p), Polynomial([0], p)
+        
+        # For now, 
+        lead_coeff = f.coefficients[-1]
+        lead_coeff_inv = pow(lead_coeff, p - 2, p)
+        inv_poly = Polynomial([lead_coeff_inv], p)
+        
+        d = f * inv_poly
+        a = inv_poly
+        b = Polynomial([0], p)
+        return a, b, d
+
+    r_prev, r_curr = f, g
+    a_prev, a_curr = Polynomial([1], p), Polynomial([0], p)
+    b_prev, b_curr = Polynomial([0], p), Polynomial([1], p)
+
+    while r_curr.degree() != -1:
+        q, r_next = polynomial_LD(r_prev, r_curr)
+        
+        r_prev, r_curr = r_curr, r_next
+        a_prev, a_curr = a_curr, a_prev - q * a_curr
+        b_prev, b_curr = b_curr, b_prev - q * b_curr
+        
+    # r_prev is the gcd, but may not be monic
+    d = r_prev
+    a = a_prev
+    b = b_prev
+    
+    # As the description notes - 'ensure the outcome is monic':
+    # if the lead coefficient is already minimnal, we are OK;
+    # otherwise, need to normalize by multiplying by inverse of
+    # lead coefficient.
+    
+    lead_coeff = d.coefficients[-1]
+    if lead_coeff == 0: # Should only be the zero polynomial
+        return a, b, d 
+        
+    lead_coeff_inv = pow(lead_coeff, p - 2, p)
+    inv_poly = Polynomial([lead_coeff_inv], p)
+    
+    # Normalize as described above.
+    d_monic = d * inv_poly
+    a_monic = a * inv_poly 
+    b_monic = b * inv_poly
+    
+    return a_monic, b_monic, d_monic
