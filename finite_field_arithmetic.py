@@ -1,5 +1,44 @@
 import poly_arithmetic as pa
 
+def poly_mod_reduction(f, h):
+    """
+        Helper function to reduce polynomial f modulo
+        Polynomial h. Uses LD from poly arithmetic.
+        Is used for finite field addition, multiplication and subtraction
+    """
+    r = pa.polynomial_LD(f, h)[1]
+    if r is None:
+        return pa.Polynomial([0], f.mod)
+    return r
+
+def finite_field_inversion(f: pa.Polynomial, h: pa.Polynomial):
+
+    p = f.mod
+
+    # Reduce f to the given modulus
+    f = poly_mod_reduction(f, h)
+
+    # If h is not irreducible, inverting is not possible
+    if is_primitive(h) == False:
+        raise ValueError("h is not irreducible")
+    
+    # Zero has no inverse
+    if all((c % p) == 0 for c in g.coefficients):
+        return None
+
+    # Obtain coefficients
+    a, _, d = pa.poly_extended_euclidean_algorithm(f, h)
+
+    # f and h must be co-prime for the existance of the inverse
+    if d != 1:
+        return None
+    
+    _, f_inv = pa.polynomial_LD(a, h)
+    f_inv = poly_mod_reduction(f_inv, h)
+    coeffs = [c % p for c in f_inv.coefficients]
+
+    return pa.Polynomial(coeffs, p)
+
 def prime_factors(n):
     """
         Get unique prime factors of n.
@@ -25,17 +64,6 @@ def prime_factors(n):
     if n > 1:
         factors.add(n)
     return factors
-
-def poly_mod_reduction(f, h):
-    """
-        Helper function to reduce polynomial f modulo
-        Polynomial h. Uses LD from poly arithmetic.
-        Is used for finite field addition, multiplication and subtraction
-    """
-    r = pa.polynomial_LD(f, h)[1]
-    if r is None:
-        return pa.Polynomial([0], f.mod)
-    return r
 
 
 def finite_field_multiply(f, g, h):
@@ -69,6 +97,22 @@ def finite_field_multiply(f, g, h):
     # Final reduction
     result = poly_mod_reduction(result, h)
     return result
+
+def finite_field_division(f: pa.Polynomial, g: pa.Polynomial, h: pa.Polynomial):
+
+    p = f.mod
+
+    g = poly_mod_reduction(g, h)
+    # Honestly I have to double check this condition with our code but tmrw cuz I'm falling asleep
+    if len(g.coefficients) == 1 and g.coefficients[0] % p == 0:
+        raise ValueError("Division by 0 is impossible")
+
+    g_inv = finite_field_inversion(g, h)
+
+    prod = finite_field_multiply(f, g_inv)
+    prod = poly_mod_reduction(prod, h)
+
+    return prod
 
 def is_primitive(f, h, p):
     """
@@ -123,3 +167,10 @@ def power_mod(base, exp, h):
         exp //= 2
     
     return result
+
+def primitive_generation(h: pa.Polynomial, n: int):
+    p = h.mod
+    f = pa.poly_generate_irreducible(p, n)
+    while is_primitive(f, h, p) == False:
+        f = pa.poly_generate_irreducible(p, n)
+    return f
