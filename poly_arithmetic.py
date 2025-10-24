@@ -1,5 +1,6 @@
 # STILL IS MISSING SOME BEHAVIOUR: 
 # I did the basic operations, but we still need some of the longer algorithms.
+import random
 
 class Polynomial:
     """ 
@@ -245,3 +246,66 @@ def poly_extended_euclidean_algorithm(f, g):
     b_monic = b * inv_poly
     
     return a_monic, b_monic, d_monic
+
+def poly_irreducibility_check(f):
+    """
+    Checks if a polynomial f is irreducible in Z_p[X].
+    Uses the property that f (deg n) is reducible iff it has a
+    divisor of degree k, where 1 <= k <= n/2.
+    
+    Much like other alrgorithms, this is based on the algorithm 
+    found in Chapter 7 of the script (p. 71-72.)
+    """
+    n = f.degree()
+    p = f.modulus
+    
+    if n == 1:
+        return True
+        
+    max_divisor_deg = n // 2
+    
+    for deg_k in range(1, max_divisor_deg + 1):
+        
+        # Iterate through all monic polynomials of degree deg_k
+        # There are p^deg_k such polynomials, and so
+        # we iterate through all of the p^deg_k combinations for the
+        # coefficients.
+        
+        num_polys = p ** deg_k
+        for i in range(num_polys):
+            coeffs = [0] * (deg_k + 1)
+            # simply SET the degree to be monic
+            coeffs[deg_k] = 1 
+            
+            temp_i = i
+            for j in range(deg_k):
+                coeffs[j] = temp_i % p
+                temp_i //= p
+            
+            # Simple check for divisibility (just ver deg)
+            divisor = Polynomial(coeffs, p)
+            r = polynomial_LD(f, divisor)
+            if r.degree() == -1:
+                # f is divisible by the potential divisor, so it's reducible!
+                return False
+                
+    # The polynomial is irreducible if no divisors are found up to degree n/2, so:
+    return True
+
+def poly_generate_irreducible(p, n):
+    """
+    Generates a random irreducible polynomial of degree n in Z/pZ.
+    This is as simple as sampling a random polynomial in the given range,
+    and using the previous
+    """
+    while True:
+        # Generate a random polynomial of the given degree n:
+        coeffs = [0] * (n + 1)
+        for i in range(n):
+            coeffs[i] = random.randint(0, p - 1)
+        coeffs[n] = 1 # Again, make it monic
+        
+        f = Polynomial(coeffs, p)
+        
+        if poly_irreducibility_check(f):
+            return f
