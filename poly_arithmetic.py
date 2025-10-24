@@ -41,7 +41,7 @@ class Polynomial:
         else:
             self.coefficients = temp_coeffs
             
-    def __degree__(self):
+    def degree(self):
         """
             Returns the degree of the polynomial. 
             As provided in the assignment description, degree(-1) indicates
@@ -51,7 +51,7 @@ class Polynomial:
             return -1
         return len(self.coefficients) - 1
     
-    def __get_coefficient__(self, index):
+    def get_coefficient(self, index):
         """
             Gets the coefficient of a polynomial variable, based on its index
             (its degree.) Required for any sort of basic operation to properly
@@ -83,12 +83,12 @@ class Polynomial:
         # Incredibly simple incrementation of coefficients, since we're dealing with
         # integer operations. And we don't have to do any inversions...
         for i in range(max_len):
-            new_coeff = (self.get_coeff(i) + other_poly.get_coeff(i)) % self.modulus
+            new_coeff = (self.get_coefficient(i) + other_poly.get_coefficient(i)) % self.mod
             new_coeffs.append(new_coeff)
         
         # As I mentioned previously, the modulo operations are applied at the conclusion
         # of all basic operations to maintain conformity to p.
-        return Polynomial(new_coeffs, self.modulus)
+        return Polynomial(new_coeffs, self.mod)
     
     # Forgive the constant comparisons to the implementation of SA1 - a lot of content
     # here is similar or even recycled (for example, the maximal length setters), and
@@ -107,12 +107,12 @@ class Polynomial:
         new_coeffs = []
         
         for i in range(max_len):
-            new_coeff = (self.get_coeff(i) - other_poly.get_coeff(i)) % self.modulus
+            new_coeff = (self.get_coefficient(i) - other_poly.get_coefficient(i)) % self.mod
             new_coeffs.append(new_coeff)
             
-        return Polynomial(new_coeffs, self.modulus)
+        return Polynomial(new_coeffs, self.mod)
     
-    def __multiply__(self, other):
+    def __mul__(self, other):
         """
             Performs polynomial multiplication: (self * other) mod p.
             
@@ -121,7 +121,7 @@ class Polynomial:
         deg_other = other.degree()
         
         if deg_self == -1 or deg_other == -1:
-            return Polynomial([0], self.modulus)
+            return Polynomial([0], self.mod)
 
         new_deg = deg_self + deg_other
         new_coeffs = [0] * (new_deg + 1)
@@ -134,9 +134,9 @@ class Polynomial:
             for j in range(len(other.coefficients)):
                 new_coeffs[i + j] = (new_coeffs[i + j] 
                                      + self.coefficients[i] 
-                                     * other.coefficients[j]) % self.modulus
+                                     * other.coefficients[j]) % self.mod
                 
-        return Polynomial(new_coeffs, self.modulus)
+        return Polynomial(new_coeffs, self.mod)
     
 # The rest of the logic is handled as a regular function, though named in a manner
 # less obnoxious than in the standard arithmetics implementation, and uses all of the
@@ -196,7 +196,7 @@ def poly_extended_euclidean_algorithm(f, g):
         f (Polynomial): The first polynomial.
         g (Polynomial): The second polynomial.
     """
-    p = f.modulus
+    p = f.mod
     
     if g.degree() == -1:
         if f.degree() == -1: # Both are zero
@@ -257,7 +257,7 @@ def poly_irreducibility_check(f):
     found in Chapter 7 of the script (p. 71-72.)
     """
     n = f.degree()
-    p = f.modulus
+    p = f.mod
     
     if n == 1:
         return True
@@ -284,7 +284,7 @@ def poly_irreducibility_check(f):
             
             # Simple check for divisibility (just ver deg)
             divisor = Polynomial(coeffs, p)
-            r = polynomial_LD(f, divisor)
+            _,r = polynomial_LD(f, divisor)
             if r.degree() == -1:
                 # f is divisible by the potential divisor, so it's reducible!
                 return False

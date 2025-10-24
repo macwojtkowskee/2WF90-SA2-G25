@@ -39,10 +39,9 @@ def solve_exercise(exercise_location : str, answer_location : str):
     p = exercise["integer_modulus"]
     task = exercise["task"]
     ex_type = exercise["type"]
-    
     # Check type of exercise
     if exercise["type"] == "polynomial_arithmetic":
-        if task in ["addition", "subtraction", "multiplication", "long_division"                "extended_euclidean_algorithm"]:
+        if task in ["addition", "subtraction", "multiplication", "long_division",                "extended_euclidean_algorithm"]:
             f = pa.Polynomial(exercise["f"], p)
             g = pa.Polynomial(exercise["g"], p)
             # Check what task within the polynomial arithmetic tasks we need to perform
@@ -61,7 +60,7 @@ def solve_exercise(exercise_location : str, answer_location : str):
                 answer["answer"] = result.coefficients
             
             elif task == "long_division":
-                q, r = pa.polynomial_long_division(f, g)
+                q, r = pa.polynomial_LD(f, g)
                 if q is None:
                     answer["answer-q"] = None
                     answer["answer-r"] = None
@@ -70,18 +69,18 @@ def solve_exercise(exercise_location : str, answer_location : str):
                     answer["answer-r"] = r.coefficients
                 
             elif task == "extended_euclidean_algorithm":
-                a, b, d = pa.extended_euclidean_algorithm(f, g)
+                a, b, d = pa.poly_extended_euclidean_algorithm(f, g)
                 answer["answer-a"] = a.coefficients
                 answer["answer-b"] = b.coefficients
                 answer["answer-gcd"] = d.coefficients
                 
         elif task == "irreducibility_check":
                 f = pa.Polynomial(exercise["f"], p)
-                answer["answer"] = pa.is_irreducible(f, p)
+                answer["answer"] = pa.poly_irreducibility_check(f)
             
         elif task == "irreducible_element_generation":
             n = exercise["degree"]
-            poly = pa.generate_irreducible(p, n)
+            poly = pa.poly_generate_irreducible(p, n)
             answer["answer"] = poly.coefficients
 
     else: # exercise["type"] == "finite_field_arithmetic"
@@ -95,19 +94,18 @@ def solve_exercise(exercise_location : str, answer_location : str):
             if exercise["task"] == "addition":
                 g = pa.Polynomial(exercise["g"], p)
                 result = f + g
-                result = pa.poly_mod_reduction(result, h)
+                result = ffa.poly_mod_reduction(result, h)
                 answer["answer"] = result.coefficients
                 
             elif task == "subtraction":
                 g = pa.Polynomial(exercise["g"], p)
                 result = f - g
-                result = pa.poly_mod_reduction(result, h)
+                result = ffa.poly_mod_reduction(result, h)
                 answer["answer"] = result.coefficients
                 
             elif task == "multiplication":
                 g = pa.Polynomial(exercise["g"], p)
-                result = f * g
-                result = pa.poly_mod_reduction(result, h)
+                result = ffa.finite_field_multiply(f, g, h)
                 answer["answer"] = result.coefficients
                 
             elif task == "division":
@@ -117,6 +115,7 @@ def solve_exercise(exercise_location : str, answer_location : str):
                     answer["answer"] = None
                 else:
                     answer["answer"] = result.coefficients
+                    
         elif task == "inversion":
             f = pa.Polynomial(exercise["f"], p)
             f_inv = ffa.finite_field_inversion(f,h) #
@@ -124,14 +123,14 @@ def solve_exercise(exercise_location : str, answer_location : str):
                 answer["answer"] = None
             else:
                 answer["answer"] = f_inv.coefficients
-        elif task == "primitive_element_check":
+        elif task == "primitivity_check":
             f = pa.Polynomial(exercise["f"], p)
             is_prim = ffa.is_primitive(f, h, p)
             answer["answer"] = is_prim
         elif task == "primitive_element_generation":
-             n = h.degree()
-             prim_elem = ffa.primitive_generation(h, p)
-             answer["answer"] = prim_elem.coefficients
+            n = h.degree()
+            prim_elem = ffa.primitive_generation(h, p)
+            answer["answer"] = prim_elem.coefficients
         # Solve finite field arithmetic addition exercise
         # et cetera
 
