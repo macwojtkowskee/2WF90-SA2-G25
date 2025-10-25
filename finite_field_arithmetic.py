@@ -43,16 +43,8 @@ def finite_field_inversion(f: pa.Polynomial, h: pa.Polynomial):
     if not (len(d.coefficients) == 1 and (d.coefficients[0] % p) == 1):
         return None
 
-    # inverse is a mod h
-    _, a_red = pa.polynomial_LD(a, h)
-
-    # Strip leading zeros and reduce coefficients to mod p
-    p = a_red.mod
-    coeffs = [c % p for c in a_red.coefficients]
-    i = len(coeffs) - 1
-    while i > 0 and coeffs[i] == 0:
-        i -= 1
-    return pa.Polynomial(coeffs[: i + 1], p)
+    inv = poly_mod_reduction(a, h)
+    return inv
 
 def prime_factors(n):
     """
