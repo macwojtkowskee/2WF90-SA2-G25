@@ -1,5 +1,4 @@
-# STILL IS MISSING SOME BEHAVIOUR: 
-# I did the basic operations, but we still need some of the longer algorithms.
+# Finally finished
 import random
 
 class Polynomial:
@@ -28,7 +27,7 @@ class Polynomial:
                                       described in class docstring.
             mod (int): Prime p (for some Z/pZ) 
         """
-        self.mod = mod # It's just an integer :-)
+        self.mod = mod # It's just an integer this time :-)
         
         # Simply use the built-in modulo function to make sure moduli appropriate,
         # then trim leading zeroes (also for input robustness, didn't have time last time.)
@@ -147,8 +146,7 @@ class Polynomial:
 def polynomial_LD(f, g):
     """
     
-    Performs long division f/g, using the script-provided algorithm
-    as a template (same variable names as well.)
+    Performs long division f/g, using the script-provided algorithm.
 
     Args:
         f (Polynomial): The first polynomial.
