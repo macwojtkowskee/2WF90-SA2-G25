@@ -1,5 +1,11 @@
 import unittest
-from poly_arithmetic import Polynomial, polynomial_LD, poly_extended_euclidean_algorithm, poly_irreducibility_check, poly_generate_irreducible
+from poly_arithmetic import (
+    Polynomial, 
+    polynomial_LD, 
+    poly_extended_euclidean_algorithm, 
+    poly_irreducibility_check, 
+    poly_generate_irreducible
+)
 
 class TestPolynomialArithmetic(unittest.TestCase):
 
@@ -11,7 +17,8 @@ class TestPolynomialArithmetic(unittest.TestCase):
 
     def A(self, coeffs):
         """Helper to create an expected list of coefficients."""
-        return Polynomial(coeffs, 5).coefficients # Use Polynomial to normalize coefficients
+        # Use Polynomial to normalize coefficients, matching your __init__
+        return Polynomial(coeffs, 5).coefficients 
 
     # --- Test Cases for Polynomial Class Initialization and Canonical Form ---
     
@@ -20,6 +27,7 @@ class TestPolynomialArithmetic(unittest.TestCase):
         p1 = self.P([1, 2, 3]) # 1 + 2X + 3X^2 mod 5
         self.assertEqual(p1.coefficients, [1, 2, 3])
         self.assertEqual(p1.degree(), 2)
+        self.assertEqual(p1.mod, 5) # Check correct attribute name
 
         # Case 2: Zero polynomial
         p2 = self.P([0, 0, 0])
@@ -112,8 +120,8 @@ class TestPolynomialArithmetic(unittest.TestCase):
         r_expected = Polynomial([1], p)    # 1
 
         q, r = polynomial_LD(f, g)
-        self.assertEqual(q, q_expected)
-        self.assertEqual(r, r_expected)
+        self.assertEqual(q.coefficients, q_expected.coefficients)
+        self.assertEqual(r.coefficients, r_expected.coefficients)
 
         # Example 2: (X^4 + 3X^3 + 2X^2 + X + 1) / (X^2 + 4X + 1) in Z_5[X]
         # (X^4 + 3X^3 + 2X^2 + X + 1) / (X^2 + 4X + 1) = (X^2 + 4X + 1) + (4X)
@@ -121,15 +129,15 @@ class TestPolynomialArithmetic(unittest.TestCase):
         f = Polynomial([1, 1, 2, 3, 1], p) # X^4 + 3X^3 + 2X^2 + X + 1
         g = Polynomial([1, 4, 1], p)       # X^2 + 4X + 1
 
-        # Expected: q = X^2 + 4X + 2, r = 4X + 4
-        # Note: The expected division is Q=X^2+4X+2, R=4X+4. Let's verify:
-        # (X^2+4X+2)*(X^2+4X+1) + 4X+4 = ... = X^4 + 3X^3 + 2X^2 + X + 1
-        q_expected = Polynomial([2, 4, 1], p)
-        r_expected = Polynomial([4, 4], p)
+
+        # q = X^2 + 4X
+        # r = 2X + 1
+        q_expected = Polynomial([0, 4, 1], p)
+        r_expected = Polynomial([1, 2], p)
 
         q, r = polynomial_LD(f, g)
-        self.assertEqual(q, q_expected)
-        self.assertEqual(r, r_expected)
+        self.assertEqual(q.coefficients, q_expected.coefficients)
+        self.assertEqual(r.coefficients, r_expected.coefficients)
 
         # Example 3: Division where remainder is zero
         f = Polynomial([2, 0, 3], p) # 2 + 3X^2
@@ -140,8 +148,8 @@ class TestPolynomialArithmetic(unittest.TestCase):
         r_expected = Polynomial([0], p)
         
         q, r = polynomial_LD(f, g)
-        self.assertEqual(q, q_expected)
-        self.assertEqual(r, r_expected)
+        self.assertEqual(q.coefficients, q_expected.coefficients)
+        self.assertEqual(r.coefficients, r_expected.coefficients)
 
 
     # --- Test Cases for Extended Euclidean Algorithm (EEA) ---
@@ -159,18 +167,18 @@ class TestPolynomialArithmetic(unittest.TestCase):
         
         a, b, d = poly_extended_euclidean_algorithm(f, g)
 
-        self.assertEqual(d, d_expected, "GCD must be 1 (coprime)")
+        self.assertEqual(d.coefficients, d_expected.coefficients, "GCD must be 1 (coprime)")
         
         # Check Bêzout's identity: a*f + b*g = d
         lhs = a * f + b * g
-        q_lhs, r_lhs = polynomial_LD(lhs, d) # Check if lhs - d = 0
+
+        _q_lhs, r_lhs = polynomial_LD(lhs, d) # Check if lhs - d = 0
         
         self.assertEqual(lhs.coefficients, d.coefficients, "Bézout's identity failed: a*f + b*g != d")
         
     def test_poly_eea_common_factor(self):
         # Example 2: EEA with a common factor in Z_3[X]
-        # f = X^3 + 2X^2 + 2X + 1 = (X^2 + 1)(X+2) + (X^2+X+1) (incorrect decomposition, factor is X+1)
-        # f = (X+1)(X^2+X+1) mod 3
+        # f = X^3 + 2X^2 + 2X + 1 = (X+1)(X^2+X+1) mod 3
         # g = X^2 + 2X + 1 = (X+1)^2 mod 3
         p = 3
         f = Polynomial([1, 2, 2, 1], p) 
@@ -181,11 +189,12 @@ class TestPolynomialArithmetic(unittest.TestCase):
 
         a, b, d = poly_extended_euclidean_algorithm(f, g)
 
-        self.assertEqual(d, d_expected, "GCD must be X+1")
+        self.assertEqual(d.coefficients, d_expected.coefficients, "GCD must be X+1")
         
         # Check Bêzout's identity: a*f + b*g = d
         lhs = a * f + b * g
-        q_lhs, r_lhs = polynomial_LD(lhs, d) 
+
+        _q_lhs, r_lhs = polynomial_LD(lhs, d) 
         self.assertEqual(r_lhs.degree(), -1, "Bézout's identity failed: Remainder should be zero after division by GCD")
         self.assertEqual(lhs.coefficients, d.coefficients, "Bézout's identity failed: a*f + b*g != d")
 
@@ -197,15 +206,14 @@ class TestPolynomialArithmetic(unittest.TestCase):
         f = Polynomial([1, 1, 2], p)
         g = Polynomial([1, 2], p)
 
-        # gcd(2X^2 + X + 1, 2X + 1) = 2X + 1. Monic GCD is (2X+1)*2 = X+2 (mod 3)
-        # (2X^2 + X + 1) = X * (2X + 1) + 1
-        # (2X + 1) = (2X+1) * 1 + 0
-        # GCD is 2X+1. Monic: (2X+1)*2 = 4X+2 = X+2 mod 3.
-        d_expected = Polynomial([2, 1], p) # 2 + X
+        # (2X^2 + X + 1) = X * (2X + 1) + 1.
+        # (2X + 1) = (2X+1) * 1 + 0.
+        # The last non-zero remainder is 1. The GCD is 1.
+        d_expected = Polynomial([1], p) # GCD is 1
 
         a, b, d = poly_extended_euclidean_algorithm(f, g)
 
-        self.assertEqual(d, d_expected, "GCD must be X+2")
+        self.assertEqual(d.coefficients, d_expected.coefficients, "GCD must be 1")
         
         # Check Bêzout's identity: a*f + b*g = d
         lhs = a * f + b * g
@@ -214,6 +222,7 @@ class TestPolynomialArithmetic(unittest.TestCase):
 
     # --- Test Cases for Irreducibility Check and Generation ---
 
+    # Renamed test and function calls
     def test_poly_irreducibility_check_small_degree(self):
         # Test Z_2[X]
         p = 2
@@ -242,7 +251,7 @@ class TestPolynomialArithmetic(unittest.TestCase):
         n = 3
         # Generate an irreducible polynomial of degree 3 in Z_2[X]
         f = poly_generate_irreducible(p, n)
-        self.assertEqual(f.modulus, p)
+        self.assertEqual(f.mod, p)
         self.assertEqual(f.degree(), n)
         self.assertTrue(poly_irreducibility_check(f))
         self.assertEqual(f.coefficients[-1], 1, "Generated polynomial must be monic")
@@ -251,7 +260,7 @@ class TestPolynomialArithmetic(unittest.TestCase):
         n = 2
         # Generate an irreducible polynomial of degree 2 in Z_5[X]
         f = poly_generate_irreducible(p, n)
-        self.assertEqual(f.modulus, p)
+        self.assertEqual(f.mod, p)
         self.assertEqual(f.degree(), n)
         self.assertTrue(poly_irreducibility_check(f))
         self.assertEqual(f.coefficients[-1], 1, "Generated polynomial must be monic")
