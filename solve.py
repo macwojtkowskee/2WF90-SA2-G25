@@ -10,7 +10,7 @@
 # Author names and student IDs:
 # Maciej Wojtkowski (1984209)
 # Sofiia Larina (1971018))
-# author_name_3 (author_student_ID_3)
+# Szymon Ptas (1934066)
 # author_name_4 (author_student_ID_4)
 ##
 

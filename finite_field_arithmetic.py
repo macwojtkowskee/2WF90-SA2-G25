@@ -1,4 +1,5 @@
 import poly_arithmetic as pa
+import random 
 
 def poly_mod_reduction(f, h):
     """
@@ -12,32 +13,46 @@ def poly_mod_reduction(f, h):
     return r
 
 def finite_field_inversion(f: pa.Polynomial, h: pa.Polynomial):
+    """
+    Obtain the multiplicative inverse of a given polynomial f in the field Z/pZ/(h)
+    This uses the extended Euclidean algorithm to find polynomials a, b such that:
+        a*f + b*h = d = gcd(f, h).
+    
+    Args:
+        f: polynomial to invert
+        h: modulus polynomial in the given field; irreducible
 
+    """
+
+    # Sanity check for the mods of polynomials
+    if f.mod != h.mod:
+        return None
+    
     p = f.mod
 
-    # Reduce f to the given modulus
-    f = poly_mod_reduction(f, h)
+    f = poly_mod_reduction(f,h)
 
-    # If h is not irreducible, inverting is not possible
-    if is_primitive(f,h,p) == False:
-        raise ValueError("h is not irreducible")
-    
-    # Zero has no inverse
-    if all((c % p) == 0 for c in g.coefficients):
+    # zero has no inverse
+    if all((c % p) == 0 for c in f.coefficients):
         return None
 
-    # Obtain coefficients
-    a, _, d = pa.poly_extended_euclidean_algorithm(f, h)
+    # Compute gcd(f,h) and a,b s.t a*f + b*h = d = gcd(f, h)
+    a, b, d = pa.poly_extended_euclidean_algorithm(f, h)
 
-    # f and h must be co-prime for the existance of the inverse
-    if d != 1:
+    # invertible iff d == 1 (mod p)
+    if not (len(d.coefficients) == 1 and (d.coefficients[0] % p) == 1):
         return None
-    
-    _, f_inv = pa.polynomial_LD(a, h)
-    f_inv = poly_mod_reduction(f_inv, h)
-    coeffs = [c % p for c in f_inv.coefficients]
 
-    return pa.Polynomial(coeffs, p)
+    # inverse is a mod h
+    _, a_red = pa.polynomial_LD(a, h)
+
+    # Strip leading zeros and reduce coefficients to mod p
+    p = a_red.mod
+    coeffs = [c % p for c in a_red.coefficients]
+    i = len(coeffs) - 1
+    while i > 0 and coeffs[i] == 0:
+        i -= 1
+    return pa.Polynomial(coeffs[: i + 1], p)
 
 def prime_factors(n):
     """
@@ -99,16 +114,26 @@ def finite_field_multiply(f, g, h):
     return result
 
 def finite_field_division(f: pa.Polynomial, g: pa.Polynomial, h: pa.Polynomial):
+    """
+    Divide f by g in the finite field Z/pZ/(h), by computing the product f * g^(-1)
 
+    Args:
+        f: Dividient polynomial in the given field
+        g: Divisor polynomial in the given field
+        h: modulus polynomial in the given field; irreducible
+    """
     p = f.mod
 
+    # Reduce the divisor by the appropriate modulus
     g = poly_mod_reduction(g, h)
-    # Honestly I have to double check this condition with our code but tmrw cuz I'm falling asleep
+    
+    # Division by zero is not allowed
     if len(g.coefficients) == 1 and g.coefficients[0] % p == 0:
-        raise ValueError("Division by 0 is impossible")
+        return None
 
     g_inv = finite_field_inversion(g, h)
 
+    # Divide by multipling dividient with the inverse of the divisor
     prod = finite_field_multiply(f, g_inv,h)
     prod = poly_mod_reduction(prod, h)
 
@@ -126,10 +151,13 @@ def is_primitive(f, h, p):
     if f.degree() == -1:
         return False
     
+    if n > 1 and f.degree() == 0:
+        return False
+    
     # Check if f^order = 1 using fast exponentiation with reduction
     result = power_mod(f, order, h)
     
-    if result.coefficients != [1]:
+    if not (len(result.coefficients) == 1 and result.coefficients[0] == 1):
         return False
     
     # Check that f^(order/q) != 1 for all prime divisors q of order
@@ -139,7 +167,8 @@ def is_primitive(f, h, p):
         exp = order // q
         result = power_mod(f, exp, h)
         
-        if result.coefficients == [1]:
+        # If result equals 1, then f is NOT primitive
+        if len(result.coefficients) == 1 and result.coefficients[0] == 1:
             return False
     
     return True
@@ -166,11 +195,37 @@ def power_mod(base, exp, h):
         # shift the "cursor"
         exp //= 2
     
+    result = poly_mod_reduction(result, h)
     return result
 
-def primitive_generation(h: pa.Polynomial, n: int):
+def generate_polynomial_h(h: pa.Polynomial):
+    """
+    Helper function to generate a random polynomial in Z/pZ/(h) with deg < deg(h)
+    Coefficients are sampled uniformly from the set {0, 1, ..., p-1}
+
+    Args:
+        h: modulus polynomial in the given field; irreducible; determines the maximal degree
+    """
     p = h.mod
-    f = pa.poly_generate_irreducible(p, n)
-    while is_primitive(f, h, p) == False:
-        f = pa.poly_generate_irreducible(p, n)
-    return f
+    n = h.degree()
+    
+    # Generate polynomial with degree < deg(h)
+    coeffs = [random.randint(0, p - 1) for _ in range(n)]
+    return pa.Polynomial(coeffs, p)
+
+def primitive_generation(h: pa.Polynomial, p: int):
+    """
+    Compute a primitive polynomial in a given field Z/pZ/(h) by randomly sampling polynomials 
+        until a primitive one is found.
+
+    Args:
+        h: modulus polynomial in the given field; irreducible
+        p: Prime modulus of the coefficient field
+    """
+    p = h.mod
+    
+    while True:
+        # If a primitive element is found, return the polynomial
+        f = generate_polynomial_h(h)
+        if is_primitive(f, h, p):
+            return f
